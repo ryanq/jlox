@@ -73,12 +73,7 @@ class Scanner {
                     // A comment goes until the end of the line.
                     while (peek() != '\n' && !isAtEnd()) advance();
                 } else if (match('*')) {
-                    while (peek() != '*' && peekNext() != '/' && !isAtEnd()) {
-                        if (peek() == '\n') line++;
-                        advance();
-                    }
-                    advance();
-                    advance();
+                    blockComment();
                 } else {
                     addToken(SLASH);
                 }
@@ -151,6 +146,19 @@ class Scanner {
         // Trim the surrounding quotes.
         String value = source.substring(start + 1, current - 1);
         addToken(STRING, value);
+    }
+
+    private void blockComment() {
+        while (!isAtEnd()) {
+            char c = advance();
+            switch (c) {
+                case '/': if (match('*')) { blockComment(); }
+                case '*': if (match('/')) { return; }
+                case '\n': line++; break;
+                default:
+                    break;
+            }
+        }
     }
 
     private boolean match(char expected) {
