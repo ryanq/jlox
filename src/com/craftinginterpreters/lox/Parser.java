@@ -38,6 +38,7 @@ class Parser {
     private Stmt statement() {
         if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
+        if (match(WHILE)) return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
@@ -52,14 +53,14 @@ class Parser {
     private Stmt ifStatement() {
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
         Expr condition = expression();
-        consume(RIGHT_PAREN, "Expect ')' after if condition."); 
-    
+        consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
         Stmt thenBranch = statement();
         Stmt elseBranch = null;
         if (match(ELSE)) {
             elseBranch = statement();
         }
-    
+
         return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
@@ -71,11 +72,11 @@ class Parser {
 
     private List<Stmt> block() {
         List<Stmt> statements = new ArrayList<>();
-    
+
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
             statements.add(declaration());
         }
-    
+
         consume(RIGHT_BRACE, "Expect '}' after block.");
         return statements;
     }
@@ -90,6 +91,15 @@ class Parser {
 
         consume(SEMICOLON, "Expect ';' after variable declaration.");
         return new Stmt.Var(name, initializer);
+    }
+
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after condition.");
+        Stmt body = statement();
+
+        return new Stmt.While(condition, body);
     }
 
     private Expr expression() {
@@ -116,25 +126,25 @@ class Parser {
 
     private Expr or() {
         Expr expr = and();
-    
+
         while (match(OR)) {
             Token operator = previous();
             Expr right = and();
             expr = new Expr.Logical(expr, operator, right);
         }
-    
+
         return expr;
     }
 
     private Expr and() {
         Expr expr = equality();
-    
+
         while (match(AND)) {
             Token operator = previous();
             Expr right = equality();
             expr = new Expr.Logical(expr, operator, right);
         }
-    
+
         return expr;
     }
 
