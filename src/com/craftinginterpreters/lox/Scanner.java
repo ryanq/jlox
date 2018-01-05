@@ -62,12 +62,14 @@ class Scanner {
             case '.': addToken(DOT); break;
             case '-': addToken(MINUS); break;
             case '+': addToken(PLUS); break;
+            case ':': addToken(COLON); break;
             case ';': addToken(SEMICOLON); break;
             case '*': addToken(STAR); break;
             case '!': addToken(match('=') ? BANG_EQUAL : BANG); break;
             case '=': addToken(match('=') ? EQUAL_EQUAL : EQUAL); break;
             case '<': addToken(match('=') ? LESS_EQUAL : LESS); break;
             case '>': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
+            case '?': addToken(QUESTION); break;
             case '/':
                 if (match('/')) {
                     // A comment goes until the end of the line.
