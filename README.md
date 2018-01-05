@@ -29,28 +29,14 @@ The code is organized so that each chapter is on its own branch. At the end of e
 Running
 -------
 
-Clone the project to a local directory:
+Clone the project to a local directory. Building and running are done using [`just`](just):
 
 ```text
-$ git clone https://github.com/ryanq/jlox
-$ cd jlox
+git clone https://github.com/ryanq/jlox
+cd jlox
+just build
+./jlox script.lox
+./jlox
 ```
 
-Building the project should be as simple as running `gradle build`, but that's been giving me some trouble recently. If it succeeds, but there are no `.class` files in `bin/lox`, you'll need to manually build the project (don't worry, it's not that much more work):
-
-```text
-$ gradle build                      # automated build
-$ javac -d bin/lox src/**/*.java    # manual build
-```
-
-Running the project is as simple as invoking the main `Lox` class:
-
-```text
-$ java -cp bin/lox com.craftinginterpreters.lox.Lox
-```
-
-Or you could run the `jlox` script, which does exactly the same thing:
-
-```text
-$ ./jlox
-```
+[just]: https://github.com/casey/just
