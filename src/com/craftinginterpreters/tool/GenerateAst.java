@@ -12,8 +12,9 @@ public class GenerateAst {
             System.exit(1);
         }
         String outputDir = args[0];
-        
+
         defineAst(outputDir, "Expr", Arrays.asList(
+            "Assign   : Token name, Expr value",
             "Binary   : Expr left, Token operator, Expr right",
             "Grouping : Expr expression",
             "Literal  : Object value",
@@ -43,7 +44,7 @@ public class GenerateAst {
         // The AST classes.
         for (String type : types) {
             String className = type.split(":")[0].trim();
-            String fields = type.split(":")[1].trim(); 
+            String fields = type.split(":")[1].trim();
             defineType(writer, baseName, className, fields);
         }
 
