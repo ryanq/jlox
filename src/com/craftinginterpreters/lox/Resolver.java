@@ -1,14 +1,30 @@
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Stack;
 
 class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Interpreter interpreter;
-    private final Stack<Map<String, Boolean>> scopes = new Stack<>();
+    private final Stack<Map<String, State>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
+
+    private enum State {
+        DECLARED,
+        DEFINED,
+        USED
+    }
+
+    private class UnusedVariableError extends RuntimeException {
+        final List<String> variables;
+
+        UnusedVariableError(List<String> variables) {
+            this.variables = variables;
+        }
+    }
 
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -29,7 +45,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitBlockStmt(Stmt.Block stmt) {
         beginScope();
         resolve(stmt.statements);
-        endScope();
+        try {
+            endScope();
+        } catch (UnusedVariableError error) {
+            Lox.error(1, "Unused variables: " + String.join(", ", error.variables));
+        }
         return null;
     }
 
@@ -142,11 +162,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
+        if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == State.DECLARED) {
             Lox.error(expr.name, "Cannot read local variable in its own initializer.");
         }
 
         resolveLocal(expr, expr.name);
+        use(expr.name);
         return null;
     }
 
@@ -168,33 +189,56 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             define(param);
         }
         resolve(function.body);
-        endScope();
+        try {
+            endScope();
+        } catch (UnusedVariableError error) {
+            Lox.error(function.name, "Unused variables: " + String.join(", ", error.variables));
+        }
 
         currentFunction = enclosingFunction;
     }
 
     private void beginScope() {
-        scopes.push(new HashMap<String, Boolean>());
+        scopes.push(new HashMap<String, State>());
     }
 
     private void endScope() {
-        scopes.pop();
+        Map<String, State> scope = scopes.pop();
+
+        List<String> unused = new ArrayList<>();
+        for (Entry<String, State> e : scope.entrySet()) {
+            String name = e.getKey();
+            State state = e.getValue();
+
+            if (state != State.USED) {
+                unused.add(name);
+            }
+        }
+
+        if (!unused.isEmpty()) {
+            throw new UnusedVariableError(unused);
+        }
     }
 
     private void declare(Token name) {
         if (scopes.isEmpty()) return;
 
-        Map<String, Boolean> scope = scopes.peek();
+        Map<String, State> scope = scopes.peek();
         if (scope.containsKey(name.lexeme)) {
             Lox.error(name, "Variable with this name already declared in this scope.");
         }
 
-        scope.put(name.lexeme, false);
+        scope.put(name.lexeme, State.DECLARED);
     }
 
     private void define(Token name) {
         if (scopes.isEmpty()) return;
-        scopes.peek().put(name.lexeme, true);
+        scopes.peek().put(name.lexeme, State.DEFINED);
+    }
+
+    private void use(Token name) {
+        if (scopes.isEmpty()) return;
+        scopes.peek().put(name.lexeme, State.USED);
     }
 
     private void resolveLocal(Expr expr, Token name) {
